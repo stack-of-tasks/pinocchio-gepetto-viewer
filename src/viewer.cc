@@ -75,7 +75,7 @@ bool ViewerBase::loadPrimitive(const char* meshName, const GeometryObject& go)
     case BV_KDOP16:
     case BV_KDOP18:
     case BV_KDOP24:
-      if (gui->addMesh(meshName, go.meshPath.c_str()))
+      if (!gui->addMesh(meshName, go.meshPath.c_str()))
         return false;
       if (go.overrideMaterial) {
         gui->setColor(meshName, color);
