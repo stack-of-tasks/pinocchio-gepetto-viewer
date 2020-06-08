@@ -1,9 +1,6 @@
-#include "pinocchio/gepetto/viewer.hh"
+#include "pinocchio/gepetto/viewer.hpp"
 
 #include <gepetto/viewer/corba/client.hh>
-
-#include <pinocchio/algorithm/kinematics.hpp>
-#include <pinocchio/algorithm/geometry.hpp>
 
 namespace pinocchio {
 namespace gepetto {
@@ -13,7 +10,7 @@ typedef ::gepetto::corbaserver::GraphicalInterface_var GUI_t;
 
 #define MakePosition(name,c) ::gepetto::corbaserver::Position name{(float)(c[0]), (float)(c[1]), (float)(c[2])}
 
-bool Viewer::initViewer(const std::string& windowName, bool loadModel)
+bool ViewerBase::initViewer(const std::string& windowName, bool loadModel)
 {
   corba::connect(windowName.c_str(), true);
   if (!corba::connected()) return false;
@@ -22,7 +19,7 @@ bool Viewer::initViewer(const std::string& windowName, bool loadModel)
   return true;
 }
 
-void Viewer::loadViewerModel(const std::string& rootNodeName)
+void ViewerBase::loadViewerModel(const std::string& rootNodeName)
 {
   if (!corba::connected()) return;
   GUI_t& gui (corba::gui());
@@ -56,7 +53,7 @@ void Viewer::loadViewerModel(const std::string& rootNodeName)
   displayVisuals(has_vis);
 }
 
-bool Viewer::loadPrimitive(const char* meshName, const GeometryObject& go)
+bool ViewerBase::loadPrimitive(const char* meshName, const GeometryObject& go)
 {
   GUI_t& gui (corba::gui());
   if (gui->nodeExists(meshName)) return false;
@@ -132,11 +129,13 @@ bool Viewer::loadPrimitive(const char* meshName, const GeometryObject& go)
   return false;
 }
 
-void Viewer::loadViewerGeometryObject(const GeometryObject& go, GeometryType gtype)
+void ViewerBase::loadViewerGeometryObject(const GeometryObject& go, GeometryType gtype)
 {
   std::string meshName = getViewerNodeName(go,gtype);
   if (loadPrimitive(meshName.c_str(), go)) {
     GUI_t& gui (corba::gui());
+    gui->addToGroup(meshName.c_str(),
+        (scene + (gtype == VISUAL ? "/visuals" : "/collisions")).c_str());
     MakePosition(s, go.meshScale);
     gui->setScale(meshName.c_str(), s);
   }
@@ -158,13 +157,13 @@ void setVisibility(GeometryModel const* gm, bool visible,
   }
 }
 
-void Viewer::displayCollisions(bool visibility)
+void ViewerBase::displayCollisions(bool visibility)
 {
   _displayCollisions = visibility;
   setVisibility(cmodel, visibility, scene + "/collisions/");
 }
 
-void Viewer::displayVisuals(bool visibility)
+void ViewerBase::displayVisuals(bool visibility)
 {
   _displayVisuals = visibility;
   setVisibility(vmodel, visibility, scene + "/visuals/");
@@ -206,24 +205,21 @@ void applyConfigurations (const std::string& prefix,
   gui->applyConfigurations(names, seq);
 }
 
-void Viewer::display(Eigen::VectorXd q)
+void ViewerBase::applyVisuals()
 {
+  if (!_displayVisuals || vmodel == NULL) return;
   if (!corba::connected()) return;
   GUI_t& gui (corba::gui());
+  applyConfigurations("v_", *vmodel, *vdata);
+  gui->refresh();
+}
 
-  // Update the robot kinematics and geometry.
-  pinocchio::forwardKinematics(model,data,q);
-
-  if (_displayCollisions && cmodel != NULL) {
-    pinocchio::updateGeometryPlacements(model, data, *cmodel, *cdata);
-    applyConfigurations(scene + "/collisions/", *cmodel, *cdata);
-  }
-
-  if (_displayVisuals && vmodel != NULL) {
-    pinocchio::updateGeometryPlacements(model, data, *vmodel, *vdata);
-    applyConfigurations(scene + "/visuals/", *vmodel, *vdata);
-  }
-
+void ViewerBase::applyCollisions()
+{
+  if (!_displayCollisions || cmodel == NULL) return;
+  if (!corba::connected()) return;
+  GUI_t& gui (corba::gui());
+  applyConfigurations("c_", *cmodel, *cdata);
   gui->refresh();
 }
 

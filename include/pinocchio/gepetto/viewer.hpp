@@ -1,3 +1,5 @@
+#pragma once
+
 #include <pinocchio/multibody/model.hpp>
 #include <pinocchio/multibody/data.hpp>
 #include <pinocchio/multibody/geometry.hpp>
@@ -5,21 +7,17 @@
 namespace pinocchio {
 namespace gepetto {
 
-struct Viewer {
-  Viewer(Model const& m, GeometryModel const* vm = NULL, GeometryModel const* cm = NULL)
-    : model(m)
-    , data(model)
-    , vmodel(vm)
-    , _displayVisuals(true)
+struct ViewerBase
+{
+  ViewerBase(GeometryModel const* vm = NULL, GeometryModel const* cm = NULL)
+    : vmodel(vm)
+    , _displayVisuals(vm)
     , cmodel(cm)
-    , _displayCollisions(!vm)
+    , _displayCollisions(!vm && cm)
   {
     if (vm) vdata.reset(new GeometryData(*vm));
-    if (cm) vdata.reset(new GeometryData(*cm));
+    if (cm) cdata.reset(new GeometryData(*cm));
   }
-
-  Model const& model;
-  Data data;
 
   GeometryModel const* vmodel;
   std::unique_ptr<GeometryData> vdata;
@@ -36,8 +34,8 @@ struct Viewer {
   inline std::string getViewerNodeName(const GeometryObject& go, GeometryType gtype)
   {
     switch(gtype) {
-      case VISUAL   : return scene + "/visuals/"    + go.name;
-      case COLLISION: return scene + "/collisions/" + go.name;
+      case VISUAL   : return "v_" + go.name;
+      case COLLISION: return "c_" + go.name;
     }
     throw std::logic_error("invalid geometry type");
   }
@@ -51,6 +49,22 @@ struct Viewer {
   void displayCollisions(bool visibility);
 
   void displayVisuals(bool visibility);
+
+  void applyVisuals();
+
+  void applyCollisions();
+};
+
+template<typename Model>
+struct Viewer : ViewerBase {
+  Viewer(Model const& m, GeometryModel const* vm = NULL, GeometryModel const* cm = NULL)
+    : ViewerBase (vm, cm)
+    , model(m)
+    , data(model)
+  {}
+
+  Model const& model;
+  typename Model::Data data;
 
   void display(Eigen::VectorXd q);
 };

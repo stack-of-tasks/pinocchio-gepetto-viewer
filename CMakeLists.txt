@@ -16,7 +16,8 @@ add_project_dependency(gepetto-viewer-corba REQUIRED)
 add_project_dependency(pinocchio REQUIRED)
 
 set(${PROJECT_NAME}_HEADERS
-  include/pinocchio/gepetto/viewer.hh)
+  include/pinocchio/gepetto/viewer.hpp
+  include/pinocchio/gepetto/viewer.hxx)
 
 add_library(pinocchio-gepetto-viewer SHARED
   ${${PROJECT_NAME}_HEADERS}
