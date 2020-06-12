@@ -53,6 +53,8 @@ struct ViewerBase
   void applyVisuals();
 
   void applyCollisions();
+
+  bool connected();
 };
 
 template<typename Model>

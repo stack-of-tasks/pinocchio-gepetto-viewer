@@ -223,5 +223,10 @@ void ViewerBase::applyCollisions()
   gui->refresh();
 }
 
+bool ViewerBase::connected()
+{
+  return (corba::connected());
+}
+
 }
 }
