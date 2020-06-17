@@ -10,6 +10,20 @@ typedef ::gepetto::corbaserver::GraphicalInterface_var GUI_t;
 
 #define MakePosition(name,c) ::gepetto::corbaserver::Position name{(float)(c[0]), (float)(c[1]), (float)(c[2])}
 
+struct ViewerBase::ViewerDataImpl {
+  ::gepetto::corbaserver::Names_t names;
+  ::gepetto::corbaserver::TransformSeq transforms;
+};
+
+ViewerBase::ViewerData::ViewerData(GeometryModel const* m)
+  : model(m)
+  , data(m == NULL ? NULL : new GeometryData(*m))
+  , impl(m == NULL ? NULL : new ViewerDataImpl)
+  , display(true)
+{}
+
+ViewerBase::ViewerData::~ViewerData() = default;
+
 bool ViewerBase::initViewer(const std::string& windowName, bool loadModel)
 {
   corba::connect(windowName.c_str(), true);
@@ -17,6 +31,38 @@ bool ViewerBase::initViewer(const std::string& windowName, bool loadModel)
   window = windowName;
   if (loadModel) loadViewerModel();
   return true;
+}
+
+bool loadPrimitive(const char* meshName, const GeometryObject& go);
+
+void load(ViewerBase::ViewerData& d, const std::string& groupName, const std::string& prefix)
+{
+  GUI_t& gui (corba::gui());
+
+  gui->createGroup(groupName.c_str());
+
+  if (d.model == NULL) return;
+
+  using namespace ::gepetto::corbaserver;
+  CORBA::ULong size ((CORBA::ULong)d.model->geometryObjects.size());
+
+  d.impl->names.length(size);
+  d.impl->transforms.length(size);
+
+  CORBA::ULong i = 0;
+  for (const auto& go : d.model->geometryObjects) {
+    std::string meshName = prefix + go.name;
+    if (loadPrimitive(meshName.c_str(), go)) {
+      gui->addToGroup(meshName.c_str(), groupName.c_str());
+      MakePosition(s, go.meshScale);
+      gui->setScale(meshName.c_str(), s);
+    }
+
+    d.impl->names[i] = new char[meshName.size()+1];
+    memcpy (d.impl->names[i], meshName.c_str(), meshName.size()+1);
+
+    ++i;
+  }
 }
 
 void ViewerBase::loadViewerModel(const std::string& rootNodeName)
@@ -30,30 +76,20 @@ void ViewerBase::loadViewerModel(const std::string& rootNodeName)
     gui->addToGroup(scene.c_str(), window.c_str());
   }
 
-  std::string viewerCollisionGroupName = scene + "/collisions";
-  //if (!gui->nodeExists(viewerCollisionGroupName))
-  gui->createGroup(viewerCollisionGroupName.c_str());
-
-  std::string viewerVisualGroupName = scene + "/visuals";
-  //if (!gui->nodeExists(viewerVisualGroupName))
-  gui->createGroup(viewerVisualGroupName.c_str());
+  load(collision, scene + "/collisions", "c_");
+  load(visual, scene + "/visuals", "v_");
 
   // iterate over visuals and create the meshes in the viewer
-  bool has_col (cmodel!=NULL);
-  bool has_vis (vmodel!=NULL);
-  if (has_col)
-    for (const auto& go : cmodel->geometryObjects)
-      loadViewerGeometryObject(go,COLLISION);
+  bool has_col (collision.model!=NULL);
+  bool has_vis (visual.model!=NULL);
+
   // Display collision if we have them and there is no visual
   displayCollisions(has_col && !has_vis);
 
-  if (has_vis)
-    for (const auto& go : vmodel->geometryObjects)
-      loadViewerGeometryObject(go,VISUAL);
   displayVisuals(has_vis);
 }
 
-bool ViewerBase::loadPrimitive(const char* meshName, const GeometryObject& go)
+bool loadPrimitive(const char* meshName, const GeometryObject& go)
 {
   GUI_t& gui (corba::gui());
   if (gui->nodeExists(meshName)) return false;
@@ -129,97 +165,41 @@ bool ViewerBase::loadPrimitive(const char* meshName, const GeometryObject& go)
   return false;
 }
 
-void ViewerBase::loadViewerGeometryObject(const GeometryObject& go, GeometryType gtype)
+void ViewerBase::display(ViewerData& d, bool visibility)
 {
-  std::string meshName = getViewerNodeName(go,gtype);
-  if (loadPrimitive(meshName.c_str(), go)) {
-    GUI_t& gui (corba::gui());
-    gui->addToGroup(meshName.c_str(),
-        (scene + (gtype == VISUAL ? "/visuals" : "/collisions")).c_str());
-    MakePosition(s, go.meshScale);
-    gui->setScale(meshName.c_str(), s);
-  }
-}
+  d.display = visibility;
 
-void setVisibility(GeometryModel const* gm, bool visible,
-    const std::string& prefix)
-{
-  if (gm==NULL) return;
+  if (d.model==NULL) return;
   if (!corba::connected()) return;
   GUI_t& gui (corba::gui());
 
-  const char* mode = (visible ? "ON" : "OFF");
+  const char* mode = (visibility ? "ON" : "OFF");
 
   std::string nodeName;
-  for (const auto& go : gm->geometryObjects) {
-    nodeName = prefix + go.name;
-    gui->setVisibility(nodeName.c_str(),mode);
-  }
+  for (CORBA::ULong i = 0; i < d.impl->names.length(); ++i)
+    gui->setVisibility(d.impl->names[i], mode);
 }
 
-void ViewerBase::displayCollisions(bool visibility)
+void ViewerBase::apply(ViewerData& d)
 {
-  _displayCollisions = visibility;
-  setVisibility(cmodel, visibility, scene + "/collisions/");
-}
-
-void ViewerBase::displayVisuals(bool visibility)
-{
-  _displayVisuals = visibility;
-  setVisibility(vmodel, visibility, scene + "/visuals/");
-}
-
-void applyConfigurations (const std::string& prefix,
-    const GeometryModel& gm, const GeometryData& gd)
-{
-  using namespace ::gepetto::corbaserver;
-  CORBA::ULong size ((CORBA::ULong)gm.geometryObjects.size());
-
-  char** nameList = Names_t::allocbuf(size);
-  Names_t names (size, size, nameList);
-
-  Transform* posSeq = TransformSeq::allocbuf(size);
-  TransformSeq seq (size, size, posSeq);
-
+  if (!d.display || d.model == NULL) return;
+  if (!corba::connected()) return;
   CORBA::ULong i = 0;
-  for (const auto& go : gm.geometryObjects) {
-    const auto& oMg = gd.oMg[i];
-
-    posSeq[i][0] = static_cast<float>(oMg.translation()[0]);
-    posSeq[i][1] = static_cast<float>(oMg.translation()[1]);
-    posSeq[i][2] = static_cast<float>(oMg.translation()[2]);
+  for (const auto& oMg : d.data->oMg) {
+    d.impl->transforms[i][0] = static_cast<float>(oMg.translation()[0]);
+    d.impl->transforms[i][1] = static_cast<float>(oMg.translation()[1]);
+    d.impl->transforms[i][2] = static_cast<float>(oMg.translation()[2]);
     Eigen::Quaterniond quat(oMg.rotation());
-    posSeq[i][3] = static_cast<float>(quat.x());
-    posSeq[i][4] = static_cast<float>(quat.y());
-    posSeq[i][5] = static_cast<float>(quat.z());
-    posSeq[i][6] = static_cast<float>(quat.w());
-
-    nameList[i] = new char[prefix.size()+go.name.size()+1];
-    strcpy (nameList[i], prefix.c_str());
-    strcpy (nameList[i]+prefix.size(), go.name.c_str());
+    d.impl->transforms[i][3] = static_cast<float>(quat.x());
+    d.impl->transforms[i][4] = static_cast<float>(quat.y());
+    d.impl->transforms[i][5] = static_cast<float>(quat.z());
+    d.impl->transforms[i][6] = static_cast<float>(quat.w());
 
     ++i;
   }
 
   GUI_t& gui (corba::gui());
-  gui->applyConfigurations(names, seq);
-}
-
-void ViewerBase::applyVisuals()
-{
-  if (!_displayVisuals || vmodel == NULL) return;
-  if (!corba::connected()) return;
-  GUI_t& gui (corba::gui());
-  applyConfigurations("v_", *vmodel, *vdata);
-  gui->refresh();
-}
-
-void ViewerBase::applyCollisions()
-{
-  if (!_displayCollisions || cmodel == NULL) return;
-  if (!corba::connected()) return;
-  GUI_t& gui (corba::gui());
-  applyConfigurations("c_", *cmodel, *cdata);
+  gui->applyConfigurations(d.impl->names, d.impl->transforms);
   gui->refresh();
 }
 
@@ -227,6 +207,8 @@ bool ViewerBase::connected()
 {
   return (corba::connected());
 }
+
+template class ViewerTpl<pinocchio::Model>;
 
 }
 }

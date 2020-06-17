@@ -16,8 +16,10 @@ make install
 
 ## Usage
 
+See *tests/ur5.cc* for an up-to-date example.
+
 ```cpp
-#include <pinocchio/gepetto/viewer.hh>
+#include <pinocchio/gepetto/viewer.hpp>
 
 pinocchio::gepetto::Viewer viewer (model,
  &visualModel, // or NULL

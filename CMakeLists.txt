@@ -5,6 +5,11 @@ set(PROJECT_NAME pinocchio-gepetto-viewer)
 set(PROJECT_DESCRIPTION "")
 set(PROJECT_URL http://github.com/jmirabel/pinocchio-gepetto-viewer)
 set(PROJECT_USE_CMAKE_EXPORT TRUE)
+set(PROJECT_CUSTOM_HEADER_EXTENSION "hpp")
+set(DOXYGEN_USE_TEMPLATE_CSS ON)
+set(DOXYGEN_INPUT "\"${CMAKE_SOURCE_DIR}/include\" \"${CMAKE_SOURCE_DIR}/src\" \"${CMAKE_SOURCE_DIR}/doc\"")
+set(DOXYGEN_FILE_PATTERNS "*.cpp *.hpp")
+set(DOXYGEN_MACRO_EXPANSION "YES")
 
 include(cmake/base.cmake)
 

@@ -8,18 +8,18 @@
 namespace pinocchio {
 namespace gepetto {
 template<typename Model>
-void Viewer<Model>::display(Eigen::VectorXd q)
+void ViewerTpl<Model>::display(Eigen::VectorXd q)
 {
   // Update the robot kinematics and geometry.
   pinocchio::forwardKinematics(model,data,q);
 
-  if (_displayCollisions && cmodel != NULL) {
-    pinocchio::updateGeometryPlacements(model, data, *cmodel, *cdata);
+  if (collision.display && collision.model != NULL) {
+    pinocchio::updateGeometryPlacements(model, data, *collision.model, *collision.data);
     applyCollisions();
   }
 
-  if (_displayVisuals && vmodel != NULL) {
-    pinocchio::updateGeometryPlacements(model, data, *vmodel, *vdata);
+  if (visual.display && visual.model != NULL) {
+    pinocchio::updateGeometryPlacements(model, data, *visual.model, *visual.data);
     applyVisuals();
   }
 }

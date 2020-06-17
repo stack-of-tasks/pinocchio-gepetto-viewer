@@ -1,5 +1,6 @@
+//! [Header include]
 #include <pinocchio/gepetto/viewer.hpp>
-#include <pinocchio/gepetto/viewer.hxx>
+//! [Header include]
 
 #include <pinocchio/parsers/urdf.hpp>
 #include <pinocchio/parsers/utils.hpp>
@@ -20,10 +21,14 @@ int main()
   pin::GeometryModel vmodel;
   pin::urdf::buildGeom (model, urdf, pin::VISUAL, vmodel, pin::rosPaths());
 
-  pin::gepetto::Viewer<pin::Model> viewer (model, &vmodel, NULL);
+//! [Create a viewer]
+  pin::gepetto::Viewer viewer (model, &vmodel, NULL);
   viewer.initViewer("pinocchio");
   viewer.loadViewerModel("ur5");
+//! [Create a viewer]
 
+//! [Display a configuration]
   viewer.display(pin::neutral(model));
+//! [Display a configuration]
   viewer.display(pin::randomConfiguration(model));
 }
