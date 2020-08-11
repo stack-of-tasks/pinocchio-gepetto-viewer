@@ -25,6 +25,8 @@ int main()
   pin::gepetto::Viewer viewer (model, &vmodel, NULL);
   viewer.initViewer("pinocchio");
   viewer.loadViewerModel("ur5");
+
+  viewer.addFrame(model.nframes-1);
 //! [Create a viewer]
 
 //! [Display a configuration]

@@ -1,5 +1,6 @@
 #include "pinocchio/gepetto/viewer.hpp"
 
+#include <regex>
 #include <gepetto/viewer/corba/client.hh>
 
 namespace pinocchio {
@@ -30,6 +31,27 @@ ViewerBase::ViewerData::ViewerData(GeometryModel const* m)
 {}
 
 ViewerBase::ViewerData::~ViewerData() = default;
+
+ViewerBase::FrameData::FrameData() : impl(new ViewerDataImpl) {}
+ViewerBase::FrameData::~FrameData() = default;
+
+void ViewerBase::FrameData::add(FrameIndex index, const std::string& scene, const std::string& name)
+{
+  if (!corba::connected()) return;
+  GUI_t& gui (corba::gui());
+
+  if (gui->createGroup("frames"))
+    gui->addToGroup("frames", scene.c_str());
+
+  i.push_back(index);
+  qs.resize(7, (Eigen::Index)i.size());
+
+  impl->names.length((CORBA::ULong)i.size());
+  impl->transforms.length((CORBA::ULong)i.size());
+  impl->names[(CORBA::ULong)i.size()-1] = ("frames/" + std::regex_replace(name, std::regex("/"), "_" )).c_str(); 
+
+  gui->addXYZaxis(impl->names[(CORBA::ULong)i.size()-1], corba::red, 0.005f, 0.01f);
+}
 
 bool ViewerBase::initViewer(const std::string& windowName, bool loadModel)
 {
@@ -197,6 +219,14 @@ void ViewerBase::apply(ViewerData& d)
   }
 
   d.impl->apply();
+}
+
+void ViewerBase::applyFrames()
+{
+  if (!corba::connected()) return;
+  for (CORBA::ULong i = 0; i < (CORBA::ULong)frameData.i.size(); ++i)
+    ConfigMap (frameData.impl->transforms[i]) = frameData.qs.col(i);
+  frameData.impl->apply();
 }
 
 bool ViewerBase::connected()

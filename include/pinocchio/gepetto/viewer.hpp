@@ -47,6 +47,19 @@ struct PINOCCHIO_GEPETTO_VIEWER_DLLAPI ViewerBase
   /// Contains the information for the collision model, if any.
   ViewerData collision;
 
+  /// Contains the information for displaying the frames.
+  struct FrameData {
+    std::vector<FrameIndex> i;
+    Eigen::Matrix<float, 7, Eigen::Dynamic> qs;
+    std::unique_ptr<ViewerDataImpl> impl;
+
+    void add(FrameIndex i, const std::string& scene, const std::string& name);
+
+    FrameData();
+    ~FrameData();
+  } frameData;
+
+
   std::string window, scene;
 
   /// \name Initialization
@@ -94,6 +107,9 @@ struct PINOCCHIO_GEPETTO_VIEWER_DLLAPI ViewerBase
     apply(collision);
   }
 
+  /// Move the frame to the placements in \c frameData.qs
+  void applyFrames();
+
   /// Tells whether this class is connected to the viewer.
   bool connected();
 
@@ -123,6 +139,10 @@ struct PINOCCHIO_GEPETTO_VIEWER_DLLAPI ViewerTpl : ViewerBase
   /// It computes geometry placements in configuration \c q and update their
   /// pose in the viewer.
   void display(Eigen::VectorXd q);
+
+  /// Add a visualization of a frame.
+  /// \todo check for duplication ?
+  void addFrame (FrameIndex i);
 };
 
 extern template class PINOCCHIO_GEPETTO_VIEWER_DLLAPI ViewerTpl<pinocchio::Model>;
