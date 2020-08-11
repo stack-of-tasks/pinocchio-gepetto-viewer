@@ -10,6 +10,20 @@
 namespace pinocchio {
 namespace gepetto {
 
+typedef Eigen::Matrix<float, 7, 1> Config;
+typedef Eigen::Map<Config> ConfigMap;
+typedef Eigen::Map<const Config> ConfigConstMap;
+
+template<typename SE3Derived, typename Vector7Like>
+void convert(const SE3Base<SE3Derived>& M, const Eigen::MatrixBase<Vector7Like>& q)
+{
+  Vector7Like& qout = const_cast<Vector7Like&>(q.derived());
+
+  qout.template head<3>() = M.translation().template cast<typename Vector7Like::Scalar>();
+  Eigen::Quaternion<typename SE3Derived::Scalar> quat(M.rotation());
+  qout.template tail<4>() = quat.coeffs().template cast<typename Vector7Like::Scalar>();
+}
+
 /** \brief Viewer base class.
  *
  * that implements the connection with gepetto-viewer.

@@ -13,6 +13,13 @@ typedef ::gepetto::corbaserver::GraphicalInterface_var GUI_t;
 struct ViewerBase::ViewerDataImpl {
   ::gepetto::corbaserver::Names_t names;
   ::gepetto::corbaserver::TransformSeq transforms;
+
+  inline void apply(bool refresh=true)
+  {
+    GUI_t& gui (corba::gui());
+    gui->applyConfigurations(names, transforms);
+    if (refresh) gui->refresh();
+  }
 };
 
 ViewerBase::ViewerData::ViewerData(GeometryModel const* m)
@@ -58,8 +65,7 @@ void load(ViewerBase::ViewerData& d, const std::string& groupName, const std::st
       gui->setScale(meshName.c_str(), s);
     }
 
-    d.impl->names[i] = new char[meshName.size()+1];
-    memcpy (d.impl->names[i], meshName.c_str(), meshName.size()+1);
+    d.impl->names[i] = meshName.c_str();
 
     ++i;
   }
@@ -186,21 +192,11 @@ void ViewerBase::apply(ViewerData& d)
   if (!corba::connected()) return;
   CORBA::ULong i = 0;
   for (const auto& oMg : d.data->oMg) {
-    d.impl->transforms[i][0] = static_cast<float>(oMg.translation()[0]);
-    d.impl->transforms[i][1] = static_cast<float>(oMg.translation()[1]);
-    d.impl->transforms[i][2] = static_cast<float>(oMg.translation()[2]);
-    Eigen::Quaterniond quat(oMg.rotation());
-    d.impl->transforms[i][3] = static_cast<float>(quat.x());
-    d.impl->transforms[i][4] = static_cast<float>(quat.y());
-    d.impl->transforms[i][5] = static_cast<float>(quat.z());
-    d.impl->transforms[i][6] = static_cast<float>(quat.w());
-
+    convert (oMg, ConfigMap (d.impl->transforms[i]));
     ++i;
   }
 
-  GUI_t& gui (corba::gui());
-  gui->applyConfigurations(d.impl->names, d.impl->transforms);
-  gui->refresh();
+  d.impl->apply();
 }
 
 bool ViewerBase::connected()
