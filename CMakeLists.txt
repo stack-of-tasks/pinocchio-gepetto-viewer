@@ -17,8 +17,14 @@ COMPUTE_PROJECT_ARGS(PROJECT_ARGS LANGUAGES CXX)
 project(${PROJECT_NAME} ${PROJECT_ARGS})
 
 # Add a required dependency
+add_project_dependency(gepetto-viewer)
 add_project_dependency(gepetto-viewer-corba REQUIRED)
 add_project_dependency(pinocchio REQUIRED)
+
+if(gepetto-viewer_FOUND)
+  CHECK_MINIMAL_CXX_STANDARD(11 ENFORCE)
+  add_subdirectory(plugins)
+endif()
 
 set(${PROJECT_NAME}_HEADERS
   include/pinocchio/gepetto/viewer.hpp
