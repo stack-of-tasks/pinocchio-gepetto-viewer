@@ -38,7 +38,19 @@ void ViewerTpl<Model>::addFrame(FrameIndex i)
 {
   if (i < 0 || i > (FrameIndex)model.nframes)
     throw std::invalid_argument("Incorrect frame index.");
-  frameData.add(i, scene, model.frames[i].name);
+  Config pos;
+  convert(pinocchio::updateFramePlacement(model, data, i), pos);
+  frameData.add(i, pos, scene, model.frames[i].name);
+}
+
+template<typename Model>
+void ViewerTpl<Model>::toggleFrame(FrameIndex i)
+{
+  if (i < 0 || i > (FrameIndex)model.nframes)
+    throw std::invalid_argument("Incorrect frame index.");
+  Config pos;
+  convert(pinocchio::updateFramePlacement(model, data, i), pos);
+  frameData.toggle(i, pos, scene, model.frames[i].name);
 }
 }
 }
