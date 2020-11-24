@@ -12,6 +12,8 @@ set(DOXYGEN_FILE_PATTERNS "*.cpp *.hpp")
 set(DOXYGEN_MACRO_EXPANSION "YES")
 
 include(cmake/base.cmake)
+include(cmake/boost.cmake)
+include(cmake/python.cmake)
 
 COMPUTE_PROJECT_ARGS(PROJECT_ARGS LANGUAGES CXX)
 project(${PROJECT_NAME} ${PROJECT_ARGS})
