@@ -10,6 +10,7 @@ set(DOXYGEN_USE_TEMPLATE_CSS ON)
 set(DOXYGEN_INPUT "\"${CMAKE_SOURCE_DIR}/include\" \"${CMAKE_SOURCE_DIR}/src\" \"${CMAKE_SOURCE_DIR}/doc\"")
 set(DOXYGEN_FILE_PATTERNS "*.cpp *.hpp")
 set(DOXYGEN_MACRO_EXPANSION "YES")
+set(CXX_DISABLE_WERROR ON)
 
 include(cmake/base.cmake)
 include(cmake/boost.cmake)
