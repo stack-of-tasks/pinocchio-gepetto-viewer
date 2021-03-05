@@ -35,7 +35,7 @@ ViewerBase::ViewerData::~ViewerData() = default;
 ViewerBase::FrameData::FrameData() : impl(new ViewerDataImpl) {}
 ViewerBase::FrameData::~FrameData() = default;
 
-void ViewerBase::FrameData::add(FrameIndex index, const std::string& scene, const std::string& name)
+void ViewerBase::FrameData::add(FrameIndex index, const Config& pos, const std::string& scene, const std::string& name)
 {
   if (!corba::connected()) return;
   GUI_t& gui (corba::gui());
@@ -51,6 +51,36 @@ void ViewerBase::FrameData::add(FrameIndex index, const std::string& scene, cons
   impl->names[(CORBA::ULong)i.size()-1] = ("frames/" + std::regex_replace(name, std::regex("/"), "_" )).c_str(); 
 
   gui->addXYZaxis(impl->names[(CORBA::ULong)i.size()-1], corba::red, 0.005f, 0.01f);
+  gui->applyConfiguration(impl->names[(CORBA::ULong)i.size()-1], pos.data());
+  gui->refresh();
+}
+
+void ViewerBase::FrameData::toggle(FrameIndex index, const Config& pos, const std::string& scene, const std::string& name)
+{
+  if (!corba::connected()) return;
+  GUI_t& gui (corba::gui());
+
+  auto iter = std::find(i.begin(), i.end(), index);
+  if (iter == i.end())
+    add (index, pos, scene, name);
+  else {
+    CORBA::ULong ierase = (CORBA::ULong)(iter-i.begin());
+
+    gui->deleteNode(impl->names[ierase], false);
+
+    i.erase(iter);
+    qs.resize(7, (Eigen::Index)i.size());
+
+    ::gepetto::corbaserver::Names_t names;
+    names.length((CORBA::ULong)i.size());
+    for (CORBA::ULong i = 0; i < ierase; ++i)
+      names[i  ] = impl->names[i];
+    for (CORBA::ULong i = ierase+1; i < impl->names.length(); ++i)
+      names[i-1] = impl->names[i];
+
+    impl->transforms.length((CORBA::ULong)i.size());
+    impl->names = names;
+  }
 }
 
 bool ViewerBase::initViewer(const std::string& windowName, bool loadModel)
@@ -93,12 +123,14 @@ void load(ViewerBase::ViewerData& d, const std::string& groupName, const std::st
   }
 }
 
-void ViewerBase::loadViewerModel(const std::string& rootNodeName)
+void ViewerBase::loadViewerModel(std::string rootNodeName)
 {
   if (!corba::connected()) return;
   GUI_t& gui (corba::gui());
 
-  scene = rootNodeName;
+  if (!rootNodeName.empty())
+    scene = rootNodeName;
+
   if (!gui->nodeExists(scene.c_str())) {
     gui->createGroup(scene.c_str());
     gui->addToGroup(scene.c_str(), window.c_str());

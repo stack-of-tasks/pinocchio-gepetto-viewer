@@ -16,6 +16,7 @@ make install
 
 ## Usage
 
+### C++ viewer
 See *tests/ur5.cc* for an up-to-date example.
 
 ```cpp
@@ -29,4 +30,11 @@ viewer.initViewer("pinocchio"); // window name
 viewer.loadViewerModel("ur5"); // scene name
 
 viewer.display(pin::neutral(model));
+```
+
+### gepetto-viewer plugin
+
+You can launch the example with
+```
+gepetto-gui --load-plugin pinocchio-plugin.so --run-pyscript tests/pinocchio-plugin.py
 ```

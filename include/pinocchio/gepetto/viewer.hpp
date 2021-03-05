@@ -53,12 +53,12 @@ struct PINOCCHIO_GEPETTO_VIEWER_DLLAPI ViewerBase
     Eigen::Matrix<float, 7, Eigen::Dynamic> qs;
     std::unique_ptr<ViewerDataImpl> impl;
 
-    void add(FrameIndex i, const std::string& scene, const std::string& name);
+    void add(FrameIndex i, const Config& pos, const std::string& scene, const std::string& name);
+    void toggle(FrameIndex i, const Config& pos, const std::string& scene, const std::string& name);
 
     FrameData();
     ~FrameData();
   } frameData;
-
 
   std::string window, scene;
 
@@ -79,7 +79,7 @@ struct PINOCCHIO_GEPETTO_VIEWER_DLLAPI ViewerBase
   bool initViewer(const std::string& windowName, bool loadModel = false);
 
   /// Load the provided model in the viewer.
-  void loadViewerModel(const std::string& rootNodeName = "world");
+  void loadViewerModel(std::string rootNodeName = "");
 
   /// \}
 
@@ -113,6 +113,9 @@ struct PINOCCHIO_GEPETTO_VIEWER_DLLAPI ViewerBase
   /// Tells whether this class is connected to the viewer.
   bool connected();
 
+protected:
+  std::string name;
+
 private:
   void display(ViewerData& d, bool visibility);
   void apply(ViewerData& d);
@@ -130,7 +133,9 @@ struct PINOCCHIO_GEPETTO_VIEWER_DLLAPI ViewerTpl : ViewerBase
     : ViewerBase (visual, collision)
     , model(model)
     , data(model)
-  {}
+  {
+    scene = model.name;
+  }
 
   Model const& model;
   typename Model::Data data;
@@ -143,6 +148,8 @@ struct PINOCCHIO_GEPETTO_VIEWER_DLLAPI ViewerTpl : ViewerBase
   /// Add a visualization of a frame.
   /// \todo check for duplication ?
   void addFrame (FrameIndex i);
+
+  void toggleFrame (FrameIndex i);
 };
 
 extern template class PINOCCHIO_GEPETTO_VIEWER_DLLAPI ViewerTpl<pinocchio::Model>;
