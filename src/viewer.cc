@@ -3,6 +3,10 @@
 #include <regex>
 #include <gepetto/viewer/corba/client.hh>
 
+#ifdef PINOCCHIO_WITH_HPP_FCL
+  #include <hpp/fcl/fwd.hh>
+#endif // PINOCCHIO_WITH_HPP_FCL
+
 namespace pinocchio {
 namespace gepetto {
 namespace corba = ::gepetto::viewer::corba;
@@ -156,72 +160,74 @@ bool loadPrimitive(const char* meshName, const GeometryObject& go)
 
   ::gepetto::corbaserver::Color color{(float)go.meshColor[0], (float)go.meshColor[1], (float)go.meshColor[2], (float)go.meshColor[3]};
 
-// #define CAST(TYPE) const TYPE& o = static_cast<TYPE&> (*go.geometry)
-//   using namespace hpp::fcl;
-//   switch (go.geometry->getNodeType())
-//   {
-//     default:
-//       throw std::logic_error("invalid hpp-fcl node type");
-//       break;
-//     case BV_AABB:
-//     case BV_OBB:
-//     case BV_RSS:
-//     case BV_kIOS:
-//     case BV_OBBRSS:
-//     case BV_KDOP16:
-//     case BV_KDOP18:
-//     case BV_KDOP24:
-//       if (!gui->addMesh(meshName, go.meshPath.c_str()))
-//         return false;
-//       if (go.overrideMaterial) {
-//         gui->setColor(meshName, color);
-//         if (!go.meshTexturePath.empty())
-//           gui->setTexture(meshName, go.meshTexturePath.c_str());
-//       }
-//       return true;
-//     case GEOM_BOX: {
-//                      CAST(Box);
-//                      return gui->addBox(meshName,
-//                          2*(float)o.halfSide[0], 2*(float)o.halfSide[1], 2*(float)o.halfSide[2],
-//                          color);
-//                    }
-//     case GEOM_SPHERE: {
-//                         CAST(Sphere);
-//                         return gui->addSphere(meshName, (float)o.radius, color);
-//                       }
-//     case GEOM_CAPSULE: {
-//                          CAST(Capsule);
-//                          return gui->addCapsule(meshName, (float)o.radius, 2*(float)o.halfLength, color);
-//                        }
-//     case GEOM_CONE: {
-//                       CAST(Cone);
-//                       return gui->addCone(meshName, (float)o.radius, 2*(float)o.halfLength, color);
-//                     }
-//     case GEOM_CYLINDER: {
-//                           CAST(Cylinder);
-//                           return gui->addCylinder(meshName, (float)o.radius, 2*(float)o.halfLength, color);
-//                         }
-//     case GEOM_CONVEX:
-//   /*
-//         elif isinstance(geom, hppfcl.Convex):
-//             pts = [ npToTuple(geom.points(geom.polygons(f)[i])) for f in range(geom.num_polygons) for i in range(3) ]
-//             gui->addCurve(meshName, pts, color)
-//             gui->setCurveMode(meshName, "TRIANGLES")
-//             gui->setLightingMode(meshName, "ON")
-//             gui->setBoolProperty(meshName, "BackfaceDrawing", True)
-//             return True
-//         elif isinstance(geom, hppfcl.ConvexBase):
-//             pts = [ npToTuple(geom.points(i)) for i in range(geom.num_points) ]
-//             gui->addCurve(meshName, pts, color)
-//             gui->setCurveMode(meshName, "POINTS")
-//             gui->setLightingMode(meshName, "OFF")
-//             return True
-//             */
-//     case GEOM_PLANE:
-//     case GEOM_HALFSPACE:
-//     case GEOM_TRIANGLE:
-//                         throw std::logic_error("unimplement primitive type.");
-//   }
+#ifdef PINOCCHIO_WITH_HPP_FCL
+#define CAST(TYPE) const TYPE& o = static_cast<TYPE&> (*go.geometry)
+  using namespace hpp::fcl;
+  switch (go.geometry->getNodeType())
+  {
+    default:
+      throw std::logic_error("invalid hpp-fcl node type");
+      break;
+    case BV_AABB:
+    case BV_OBB:
+    case BV_RSS:
+    case BV_kIOS:
+    case BV_OBBRSS:
+    case BV_KDOP16:
+    case BV_KDOP18:
+    case BV_KDOP24:
+      if (!gui->addMesh(meshName, go.meshPath.c_str()))
+        return false;
+      if (go.overrideMaterial) {
+        gui->setColor(meshName, color);
+        if (!go.meshTexturePath.empty())
+          gui->setTexture(meshName, go.meshTexturePath.c_str());
+      }
+      return true;
+    case GEOM_BOX: {
+                     CAST(Box);
+                     return gui->addBox(meshName,
+                         2*(float)o.halfSide[0], 2*(float)o.halfSide[1], 2*(float)o.halfSide[2],
+                         color);
+                   }
+    case GEOM_SPHERE: {
+                        CAST(Sphere);
+                        return gui->addSphere(meshName, (float)o.radius, color);
+                      }
+    case GEOM_CAPSULE: {
+                         CAST(Capsule);
+                         return gui->addCapsule(meshName, (float)o.radius, 2*(float)o.halfLength, color);
+                       }
+    case GEOM_CONE: {
+                      CAST(Cone);
+                      return gui->addCone(meshName, (float)o.radius, 2*(float)o.halfLength, color);
+                    }
+    case GEOM_CYLINDER: {
+                          CAST(Cylinder);
+                          return gui->addCylinder(meshName, (float)o.radius, 2*(float)o.halfLength, color);
+                        }
+    case GEOM_CONVEX:
+  /*
+        elif isinstance(geom, hppfcl.Convex):
+            pts = [ npToTuple(geom.points(geom.polygons(f)[i])) for f in range(geom.num_polygons) for i in range(3) ]
+            gui->addCurve(meshName, pts, color)
+            gui->setCurveMode(meshName, "TRIANGLES")
+            gui->setLightingMode(meshName, "ON")
+            gui->setBoolProperty(meshName, "BackfaceDrawing", True)
+            return True
+        elif isinstance(geom, hppfcl.ConvexBase):
+            pts = [ npToTuple(geom.points(i)) for i in range(geom.num_points) ]
+            gui->addCurve(meshName, pts, color)
+            gui->setCurveMode(meshName, "POINTS")
+            gui->setLightingMode(meshName, "OFF")
+            return True
+            */
+    case GEOM_PLANE:
+    case GEOM_HALFSPACE:
+    case GEOM_TRIANGLE:
+                        throw std::logic_error("unimplement primitive type.");
+  }
+#endif // PINOCCHIO_WITH_HPP_FCL
   return false;
 }
 
