@@ -3,6 +3,10 @@
 #include <regex>
 #include <gepetto/viewer/corba/client.hh>
 
+#ifdef PINOCCHIO_WITH_HPP_FCL
+  #include <hpp/fcl/fwd.hh>
+#endif // PINOCCHIO_WITH_HPP_FCL
+
 namespace pinocchio {
 namespace gepetto {
 namespace corba = ::gepetto::viewer::corba;
@@ -156,6 +160,7 @@ bool loadPrimitive(const char* meshName, const GeometryObject& go)
 
   ::gepetto::corbaserver::Color color{(float)go.meshColor[0], (float)go.meshColor[1], (float)go.meshColor[2], (float)go.meshColor[3]};
 
+#ifdef PINOCCHIO_WITH_HPP_FCL
 #define CAST(TYPE) const TYPE& o = static_cast<TYPE&> (*go.geometry)
   using namespace hpp::fcl;
   switch (go.geometry->getNodeType())
@@ -222,6 +227,7 @@ bool loadPrimitive(const char* meshName, const GeometryObject& go)
     case GEOM_TRIANGLE:
                         throw std::logic_error("unimplement primitive type.");
   }
+#endif // PINOCCHIO_WITH_HPP_FCL
   return false;
 }
 

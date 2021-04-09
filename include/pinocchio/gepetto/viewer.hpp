@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __pinocchio_gepetto_viewer_viewer_hpp__
+#define __pinocchio_gepetto_viewer_viewer_hpp__
 
 #include <pinocchio/multibody/model.hpp>
 #include <pinocchio/multibody/model.hpp>
@@ -159,3 +160,5 @@ typedef class ViewerTpl<pinocchio::Model> Viewer;
 }
 
 #include <pinocchio/gepetto/viewer.hxx>
+
+#endif // __pinocchio_gepetto_viewer_viewer_hpp__

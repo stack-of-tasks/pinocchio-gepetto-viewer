@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __pinocchio_gepetto_viewer_viewer_hxx__
+#define __pinocchio_gepetto_viewer_viewer_hxx__
 
 #include "pinocchio/gepetto/viewer.hpp"
 
@@ -54,3 +55,5 @@ void ViewerTpl<Model>::toggleFrame(FrameIndex i)
 }
 }
 }
+
+#endif // __pinocchio_gepetto_viewer_viewer_hxx__
