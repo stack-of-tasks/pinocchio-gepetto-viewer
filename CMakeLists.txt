@@ -1,47 +1,79 @@
-cmake_minimum_required(VERSION 3.2)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.2)
 
 # These variables have to be defined before running SETUP_PROJECT
-set(PROJECT_NAME pinocchio-gepetto-viewer)
-set(PROJECT_DESCRIPTION "")
-set(PROJECT_URL http://github.com/jmirabel/pinocchio-gepetto-viewer)
-set(PROJECT_USE_CMAKE_EXPORT TRUE)
-set(PROJECT_CUSTOM_HEADER_EXTENSION "hpp")
-set(DOXYGEN_USE_TEMPLATE_CSS ON)
-set(DOXYGEN_INPUT "\"${CMAKE_SOURCE_DIR}/include\" \"${CMAKE_SOURCE_DIR}/src\" \"${CMAKE_SOURCE_DIR}/doc\"")
-set(DOXYGEN_FILE_PATTERNS "*.cpp *.hpp")
-set(DOXYGEN_MACRO_EXPANSION "YES")
-set(CXX_DISABLE_WERROR ON)
+SET(PROJECT_NAME pinocchio-gepetto-viewer)
+SET(PROJECT_DESCRIPTION "")
+SET(PROJECT_URL http://github.com/jmirabel/pinocchio-gepetto-viewer)
+SET(PROJECT_USE_CMAKE_EXPORT TRUE)
+SET(PROJECT_CUSTOM_HEADER_EXTENSION "hpp")
+SET(DOXYGEN_USE_TEMPLATE_CSS ON)
+SET(DOXYGEN_INPUT "\"${CMAKE_SOURCE_DIR}/include\" \"${CMAKE_SOURCE_DIR}/src\" \"${CMAKE_SOURCE_DIR}/doc\"")
+SET(DOXYGEN_FILE_PATTERNS "*.cpp *.hpp")
+SET(DOXYGEN_MACRO_EXPANSION "YES")
+SET(CXX_DISABLE_WERROR ON)
 
-include(cmake/base.cmake)
-include(cmake/boost.cmake)
-include(cmake/python.cmake)
+INCLUDE(cmake/base.cmake)
+INCLUDE(cmake/boost.cmake)
+INCLUDE(cmake/python.cmake)
 
 COMPUTE_PROJECT_ARGS(PROJECT_ARGS LANGUAGES CXX)
-project(${PROJECT_NAME} ${PROJECT_ARGS})
+PROJECT(${PROJECT_NAME} ${PROJECT_ARGS})
+
+OPTION(BUILD_TESTS "Build tests" ON)
+OPTION(BUILD_PLUGINS "Build plugins" OFF)
 
 # Add a required dependency
-add_project_dependency(gepetto-viewer)
-add_project_dependency(gepetto-viewer-corba REQUIRED)
-add_project_dependency(pinocchio REQUIRED)
+ADD_PROJECT_DEPENDENCY(gepetto-viewer)
+ADD_PROJECT_DEPENDENCY(gepetto-viewer-corba REQUIRED)
+ADD_PROJECT_DEPENDENCY(pinocchio REQUIRED)
 
-# if(gepetto-viewer_FOUND)
-#  CHECK_MINIMAL_CXX_STANDARD(11 ENFORCE)
-#  add_subdirectory(plugins)
-# endif()
+IF(BUILD_PLUGINS)
+  IF(gepetto-viewer_FOUND)
+   CHECK_MINIMAL_CXX_STANDARD(11 ENFORCE)
+   ADD_SUBDIRECTORY(plugins)
+  ENDIF()
+ENDIF()
 
-set(${PROJECT_NAME}_HEADERS
-  include/pinocchio/gepetto/viewer.hpp
-  include/pinocchio/gepetto/viewer.hxx)
+SET(
+  ${PROJECT_NAME}_HEADERS
+  ${PROJECT_SOURCE_DIR}/include/pinocchio/gepetto/viewer.hpp
+  ${PROJECT_SOURCE_DIR}/include/pinocchio/gepetto/viewer.hxx
+)
 
-add_library(pinocchio-gepetto-viewer SHARED
+ADD_LIBRARY(
+  ${PROJECT_NAME} 
+  SHARED
   ${${PROJECT_NAME}_HEADERS}
-  src/viewer.cc)
-target_link_libraries(pinocchio-gepetto-viewer PUBLIC pinocchio::pinocchio gepetto-viewer-corba::gepetto-viewer-corba)
+  ${PROJECT_SOURCE_DIR}/src/viewer.cc
+)
+TARGET_LINK_LIBRARIES(
+  ${PROJECT_NAME}
+  PUBLIC 
+  pinocchio::pinocchio 
+  gepetto-viewer::gepetto-viewer
+  gepetto-viewer-corba::gepetto-viewer-corba
+)
+TARGET_INCLUDE_DIRECTORIES(
+  ${PROJECT_NAME} 
+  PUBLIC 
+  $<INSTALL_INTERFACE:include>
+)
+IF(PINOCCHIO_USE_HPP_FCL)
+  target_compile_definitions(
+    ${PROJECT_NAME} 
+    PRIVATE
+    PINOCCHIO_WITH_HPP_FCL
+  )
+ENDIF()
 
-add_executable(ur5 tests/ur5.cc)
-target_link_libraries(ur5 PRIVATE pinocchio-gepetto-viewer)
-add_test(NAME ur5 COMMAND ur5)
+IF(BUILD_TESTS)
+  ADD_EXECUTABLE(ur5 tests/ur5.cc)
+  TARGET_LINK_LIBRARIES(ur5 PRIVATE pinocchio-gepetto-viewer)
+  ADD_TEST(NAME ur5 COMMAND ur5)
+ENDIF()
 
-install(TARGETS pinocchio-gepetto-viewer
+INSTALL(TARGETS pinocchio-gepetto-viewer
         EXPORT ${TARGETS_EXPORT_NAME}
         DESTINATION lib)
+
+PKG_CONFIG_APPEND_LIBS(${PROJECT_NAME})
