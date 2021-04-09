@@ -19,15 +19,18 @@ include(cmake/python.cmake)
 COMPUTE_PROJECT_ARGS(PROJECT_ARGS LANGUAGES CXX)
 project(${PROJECT_NAME} ${PROJECT_ARGS})
 
+option(BUILD_TESTS "Build tests" ON)
+option(BUILD_PLUGINS "Build plugins" OFF)
+
 # Add a required dependency
-add_project_dependency(gepetto-viewer)
 add_project_dependency(gepetto-viewer-corba REQUIRED)
 add_project_dependency(pinocchio REQUIRED)
 
-# if(gepetto-viewer_FOUND)
-#  CHECK_MINIMAL_CXX_STANDARD(11 ENFORCE)
-#  add_subdirectory(plugins)
-# endif()
+if(BUILD_PLUGINS)
+  add_project_dependency(gepetto-viewer REQUIRED)
+  check_minimal_cxx_standard(11 ENFORCE)
+  add_subdirectory(plugins)
+endif()
 
 set(${PROJECT_NAME}_HEADERS
   include/pinocchio/gepetto/viewer.hpp
@@ -37,11 +40,16 @@ add_library(pinocchio-gepetto-viewer SHARED
   ${${PROJECT_NAME}_HEADERS}
   src/viewer.cc)
 target_link_libraries(pinocchio-gepetto-viewer PUBLIC pinocchio::pinocchio gepetto-viewer-corba::gepetto-viewer-corba)
+target_include_directories(pinocchio-gepetto-viewer PUBLIC $<INSTALL_INTERFACE:include>)
 
-add_executable(ur5 tests/ur5.cc)
-target_link_libraries(ur5 PRIVATE pinocchio-gepetto-viewer)
-add_test(NAME ur5 COMMAND ur5)
+if(BUILD_TESTS)
+  add_executable(ur5 tests/ur5.cc)
+  target_link_libraries(ur5 PRIVATE pinocchio-gepetto-viewer)
+  add_test(NAME ur5 COMMAND ur5)
+endif()
 
 install(TARGETS pinocchio-gepetto-viewer
         EXPORT ${TARGETS_EXPORT_NAME}
         DESTINATION lib)
+
+pkg_config_append_libs(${PROJECT_NAME})
